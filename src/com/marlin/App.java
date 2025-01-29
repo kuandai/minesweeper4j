@@ -21,29 +21,46 @@ import javax.sound.sampled.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import javax.imageio.ImageIO;
+
+class ImageExtractor {
+    public Image getImage(String filename) {
+        try {
+            return ImageIO.read(getClass().getResourceAsStream(
+                    "/" + filename));
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    public ImageExtractor() {};
+}
 
 public class App {
+
     final static int gridSize = 15;
 
     public static boolean isDead = false;
     public static MineButton[][] buttons;
+    public static Map<String, ImageIcon> images;
 
     public static void init() {
         // Load images
-        Map<String, ImageIcon> images = new HashMap<>();
-        images.put("mine", new ImageIcon("assets/mine.png"));
-        images.put("flag", new ImageIcon("assets/flag.png"));
-        images.put("normal", new ImageIcon("assets/normal.png"));
-        images.put("dead", new ImageIcon("assets/dead.png"));
-        images.put("0", new ImageIcon("assets/0.png"));
-        images.put("1", new ImageIcon("assets/1.png"));
-        images.put("2", new ImageIcon("assets/2.png"));
-        images.put("3", new ImageIcon("assets/3.png"));
-        images.put("4", new ImageIcon("assets/4.png"));
-        images.put("5", new ImageIcon("assets/5.png"));
-        images.put("6", new ImageIcon("assets/6.png"));
-        images.put("7", new ImageIcon("assets/7.png"));
-        images.put("8", new ImageIcon("assets/8.png"));
+        ImageExtractor extractor = new ImageExtractor();
+        images = new HashMap<>();
+        images.put("mine", new ImageIcon(extractor.getImage("assets/mine.png")));
+        images.put("flag", new ImageIcon(extractor.getImage("assets/flag.png")));
+        images.put("normal", new ImageIcon(extractor.getImage("assets/normal.png")));
+        images.put("dead", new ImageIcon(extractor.getImage("assets/dead.png")));
+        images.put("0", new ImageIcon(extractor.getImage("assets/0.png")));
+        images.put("1", new ImageIcon(extractor.getImage("assets/1.png")));
+        images.put("2", new ImageIcon(extractor.getImage("assets/2.png")));
+        images.put("3", new ImageIcon(extractor.getImage("assets/3.png")));
+        images.put("4", new ImageIcon(extractor.getImage("assets/4.png")));
+        images.put("5", new ImageIcon(extractor.getImage("assets/5.png")));
+        images.put("6", new ImageIcon(extractor.getImage("assets/6.png")));
+        images.put("7", new ImageIcon(extractor.getImage("assets/7.png")));
+        images.put("8", new ImageIcon(extractor.getImage("assets/8.png")));
     }
 
     public static void main(String[] args) {
@@ -64,7 +81,7 @@ public class App {
         for (int i = 0; i < gridSize; i++) {
             for (int j = 0; j < gridSize; j++) {
                 buttons[i][j] = new MineButton(i, j);
-                buttons[i][j].setIcon(new ImageIcon("assets/normal.png"));
+                buttons[i][j].setIcon(images.get("normal"));
                 buttons[i][j].addMouseListener(new java.awt.event.MouseAdapter() {
                     @Override
                     public void mousePressed(java.awt.event.MouseEvent e) {
@@ -73,7 +90,7 @@ public class App {
                             // Handle right click
                             if (!button.isRevealed()) {
                                 button.setFlagged(!button.isFlagged());
-                                button.setIcon(button.isFlagged() ? new ImageIcon("assets/flag.png") : new ImageIcon("assets/normal.png"));
+                                button.setIcon(button.isFlagged() ? images.get("flag") : images.get("normal"));
                             }
                             return;
                         }
@@ -86,11 +103,11 @@ public class App {
                                 for (int i = 0; i < gridSize; i++) {
                                     for (int j = 0; j < gridSize; j++) {
                                         if (buttons[i][j].isMine()) {
-                                            buttons[i][j].setIcon(new ImageIcon("assets/mine.png"));
+                                            buttons[i][j].setIcon(images.get("mine"));
                                         }
                                     }
                                 }
-                                button.setIcon(new ImageIcon("assets/dead.png"));
+                                button.setIcon(images.get("dead"));
                                 return;
                             }
                             
@@ -109,7 +126,7 @@ public class App {
                                     }
                                 }
                                 current.setRevealed(true);
-                                current.setIcon(new ImageIcon("assets/" + neighbourMines + ".png"));
+                                current.setIcon(images.get(neighbourMines + ""));
                                 if (neighbourMines == 0) {
                                     for (int i = -1; i <= 1; i++) {
                                         for (int j = -1; j <= 1; j++) {
