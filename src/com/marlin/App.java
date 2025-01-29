@@ -6,6 +6,8 @@
 
 package com.marlin;
 
+import com.marlin.MineButton;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -13,9 +15,18 @@ import java.awt.event.ActionListener;
 
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Queue;
+import java.util.LinkedList;
+import javax.sound.sampled.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 
 public class App {
     final static int gridSize = 15;
+
+    public static boolean isDead = false;
+    public static MineButton[][] buttons;
 
     public static void init() {
         // Load images
@@ -43,27 +54,121 @@ public class App {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(16 * gridSize, 16 * gridSize);
         frame.setResizable(false);
-        frame.setVisible(true);
 
         // Create the grid panel
         JPanel gridPanel = new JPanel();
         gridPanel.setLayout(new GridLayout(gridSize, gridSize, 0, 0));
 
         // Add buttons to the grid
-        JButton[][] buttons = new JButton[gridSize][gridSize];
-        for (JButton[] row : buttons) {
-            for (JButton button : row) {
-                button = new JButton();
-                button.setIcon(new ImageIcon("assets/normal.png"));
-                button.addActionListener(new ActionListener() {
+        buttons = new MineButton[gridSize][gridSize];
+        for (int i = 0; i < gridSize; i++) {
+            for (int j = 0; j < gridSize; j++) {
+                buttons[i][j] = new MineButton(i, j);
+                buttons[i][j].setIcon(new ImageIcon("assets/normal.png"));
+                buttons[i][j].addMouseListener(new java.awt.event.MouseAdapter() {
                     @Override
-                    public void actionPerformed(ActionEvent e) {
-                        JButton button = (JButton) e.getSource();
-                        button.setIcon(new ImageIcon("assets/mine.png"));
+                    public void mousePressed(java.awt.event.MouseEvent e) {
+                        MineButton button = (MineButton) e.getSource();
+                        if (e.getButton() == java.awt.event.MouseEvent.BUTTON3) {
+                            // Handle right click
+                            if (!button.isRevealed()) {
+                                button.setFlagged(!button.isFlagged());
+                                button.setIcon(button.isFlagged() ? new ImageIcon("assets/flag.png") : new ImageIcon("assets/normal.png"));
+                            }
+                            return;
+                        }
+                        if (button.isFlagged()) { return; }
+                        if (e.getButton() == java.awt.event.MouseEvent.BUTTON1) {
+                            if (isDead) { return; }
+                            if (button.isMine()) {
+                                isDead = true;
+                                // Show every mine
+                                for (int i = 0; i < gridSize; i++) {
+                                    for (int j = 0; j < gridSize; j++) {
+                                        if (buttons[i][j].isMine()) {
+                                            buttons[i][j].setIcon(new ImageIcon("assets/mine.png"));
+                                        }
+                                    }
+                                }
+                                button.setIcon(new ImageIcon("assets/dead.png"));
+                                return;
+                            }
+                            
+                            // BFS to reveal the grid
+                            Queue<MineButton> queue = new LinkedList<>();
+                            queue.add(button);
+                            while (!queue.isEmpty()) {
+                                MineButton current = queue.poll();
+                                int neighbourMines = 0;
+                                // Calculate number of neighbouring tiles with mines
+                                for (int i = Math.max(0, current.getTileX() - 1); i <= Math.min(gridSize - 1, current.getTileX() + 1); i++) {
+                                    for (int j = Math.max(0, current.getTileY() - 1); j <= Math.min(gridSize - 1, current.getTileY() + 1); j++) {
+                                        if (buttons[i][j].isMine()) {
+                                            neighbourMines++;
+                                        }
+                                    }
+                                }
+                                current.setRevealed(true);
+                                current.setIcon(new ImageIcon("assets/" + neighbourMines + ".png"));
+                                if (neighbourMines == 0) {
+                                    for (int i = -1; i <= 1; i++) {
+                                        for (int j = -1; j <= 1; j++) {
+                                            if (i == 0 && j == 0) {
+                                                continue;
+                                            }
+                                            int x = current.getTileX() + i;
+                                            int y = current.getTileY() + j;
+                                            if (x >= 0 && x < gridSize && y >= 0 && y < gridSize) {
+                                                MineButton neighbour = buttons[x][y];
+                                                if (!neighbour.isRevealed()) {
+                                                    queue.add(neighbour);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            // Check if all tiles except mines are revealed
+                            int sum = 0;
+                            for (int i = 0; i < gridSize; i++) {
+                                for (int j = 0; j < gridSize; j++) {
+                                    if (!buttons[i][j].isMine() && buttons[i][j].isRevealed()) {
+                                        sum++;
+                                    }
+                                }
+                            }
+                            if (sum == 0) {
+                                isDead = true;
+                                // Play win sound
+                                try {
+                                    URL soundURL = App.class.getClassLoader().getResource("assets/tada.wav");
+                                    if (soundURL == null) {
+                                        throw new RuntimeException("Sound file not found!");
+                                    }
+
+                                    AudioInputStream audioStream = AudioSystem.getAudioInputStream(soundURL);
+                                    Clip clip = AudioSystem.getClip();
+                                    clip.open(audioStream);
+                                    clip.start();
+                                    clip.close();
+                                    audioStream.close();
+                                } catch (Exception ignore) {}
+                            }
+                        }
                     }
                 });
-                gridPanel.add(button);
+                gridPanel.add(buttons[i][j]);
             }
+        }
+
+        // Initialization complete, display the frame
+        frame.setVisible(true);
+
+        // Place the mines randomly
+        for (int i = 0; i < (int)(gridSize*gridSize >> 3); i++) {
+            int x = (int) (Math.random() * gridSize);
+            int y = (int) (Math.random() * gridSize);
+            buttons[x][y].setMine(true);
         }
 
         // Add the grid to the frame
