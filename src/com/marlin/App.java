@@ -137,7 +137,7 @@ public class App {
                                     }
                                 }
                             }
-                            if (sum == 0) {
+                            if (sum == gridSize*gridSize - (gridSize*gridSize >> 3)) {
                                 isDead = true;
                                 // Play win sound
                                 try {
@@ -150,8 +150,6 @@ public class App {
                                     Clip clip = AudioSystem.getClip();
                                     clip.open(audioStream);
                                     clip.start();
-                                    clip.close();
-                                    audioStream.close();
                                 } catch (Exception ignore) {}
                             }
                         }
