@@ -138,6 +138,7 @@ public class App {
                                             if (x >= 0 && x < gridSize && y >= 0 && y < gridSize) {
                                                 MineButton neighbour = buttons[x][y];
                                                 if (!neighbour.isRevealed()) {
+                                                    neighbour.setRevealed(true);
                                                     queue.add(neighbour);
                                                 }
                                             }
